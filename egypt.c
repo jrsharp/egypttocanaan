@@ -6,11 +6,12 @@
 #include "e2c.h"
 
 #define FBSZ 12000
+#define NUM_PLAYERS 6
 
 char fb[FBSZ];
 QuestionCard q_cards[100];
 SpecialCard s_cards[25];
-Player players[6];
+Player players[NUM_PLAYERS];
 
 // board definition, start to finish...
 //
@@ -106,6 +107,15 @@ void print_board() {
 	print(bout);
 }
 
+int is_answer_correct(QuestionCard *qc, char *ans) {
+	if (strlen(ans) < 3) { // is the magic number
+		return 0;
+	}
+	if (cistrstr(qc->answer, ans) != nil) { // match
+		return 1;
+	}
+	return 0;
+}
 
 void
 main(int argc, char **argv)
@@ -124,17 +134,34 @@ main(int argc, char **argv)
 	//print_question(&q_cards[nrand(100)]);
 	//print_special(&s_cards[nrand(25)]);
 
-	if(initdraw(nil, nil, "Egypt To Canaan") < 0)
-		sysfatal("initdraw failed: %r");
+	if (initdraw(nil, nil, "Egypt To Canaan") < 0) {
+		print("initdraw() failed. proceeding with text-only version...\n\n");
+	}
 
 	int i = 0;
-	while(not_quit) {
+	while (i < NUM_PLAYERS) {
+		print("Player #%d's name: \n", i);
+		long br = read(0, inbuf, 32);
+		inbuf[br] = 0;
+		strncpy(players[i].name, inbuf, br - 1);
+		print("Cool. Player #%d is '%s'\n\n", i, players[i].name);
+		i++;
+	}
+
+	i = 0;
+	while (not_quit) {
 		QuestionCard *qc = &q_cards[nrand(100)];
+		char userinput[64];
 		print("\nQ# %s: %s (%s)\n", qc->number, qc->question, qc->value);
 		long br = read(0, inbuf, 64);
 		inbuf[br] = 0; // n.t.
-		print("Your answer: %s\n", inbuf);
+		strncpy(userinput, inbuf, br - 1);
+		print("Your answer: %s\n", userinput);
 		print("Correct answer: %s\n", qc->answer);
+		if (is_answer_correct(qc, userinput) == 1) {
+			print("Nice job!\n");
+		}
+		memset(userinput, 0, 64);
 	}
 
 	print("Welcome to Canaan.\n");
